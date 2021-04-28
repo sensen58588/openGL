@@ -1,20 +1,52 @@
 #include <iostream>
 #include<GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <fstream>
+#include <string>
 
-const char* vertexShaderSource1 = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
 
-const char* fregrementShaderSource1 = "#version 330 core\n"
-"layout (location = 0) out vec4 color;\n"
-"void main()\n"
-"{\n"
-"   color = vec4(1.0, 0.2, 0.0, 0.0);\n"
-"}\0";
+struct ShaderScource
+{
+    const std::string vertexShader;
+    const std::string fragmentShader;
+};
+
+enum class shaderType {
+    defaultValue = -1,
+    vertexShader,
+    fragmentShader
+};
+
+static ShaderScource parseShaderFile(const std::string &filePath) {
+    std::ifstream in(filePath);
+    if (!in.is_open()) {
+        std::cout << "ERROR!!!!! open file:%s, failed!!" << filePath << std::endl;
+        return {"",""};
+    }
+
+    shaderType type = shaderType::defaultValue;
+    std::string vertexSource;
+    std::string fragmentSource;
+    std::string line;
+    while (getline(in, line))
+    {
+        if (line.find("vertexShader") != line.npos) {
+            type = shaderType::vertexShader;
+        }
+        else if (line.find("fragmentShader") != line.npos) {
+            type = shaderType::fragmentShader;
+        }
+        else {
+            if (type == shaderType::vertexShader) {
+                vertexSource.append(line + "\n");
+            }
+            if (type == shaderType::fragmentShader) {
+                fragmentSource.append(line + "\n");
+            }
+        }
+    }
+    return { vertexSource , fragmentSource };
+};
 
 
 static unsigned int compileShader(unsigned int type, const std::string &source) {
@@ -29,7 +61,7 @@ static unsigned int compileShader(unsigned int type, const std::string &source) 
         GLsizei log_length = 0;
         GLchar message[1024];
         glGetShaderInfoLog(shader, 1024, &log_length, message);
-        std::cout << "compile shader:%s failed!! " << (type == GL_VERTEX_SHADER ? "vertexShader" : "fregrementShader") << std::endl;
+        std::cout << "compile shader:%s failed!! " << (type == GL_VERTEX_SHADER ? "vertexShader" : "fragmentShader") << std::endl;
         std::cout << message << std::endl;
         glDeleteShader(shader);
         return 0;
@@ -51,8 +83,6 @@ static unsigned int createShader(const std::string &vertextShaderSource, const s
     glDeleteShader(fs);
     return program;
 };
-
-
 
 int main(void)
 {
@@ -76,6 +106,8 @@ int main(void)
         return -1;
     }
 
+    auto shaderSource = parseShaderFile("res/shaders/triangle.shader");
+
     std::cout << "opengl version is " << glGetString(GL_VERSION) << std::endl;
 
     float vertices[] = {
@@ -91,7 +123,7 @@ int main(void)
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3,0);
     
-    unsigned int pragram = createShader(vertexShaderSource1, fregrementShaderSource1);
+    unsigned int pragram = createShader(shaderSource.vertexShader, shaderSource.fragmentShader);
     glUseProgram(pragram);
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
