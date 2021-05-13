@@ -111,25 +111,52 @@ int main(void)
     std::cout << "opengl version is " << glGetString(GL_VERSION) << std::endl;
 
     float vertices[] = {
-    -0.5f, -0.5f, 0.0f,
-     0.5f, -0.5f, 0.0f,
-     0.0f,  0.5f, 0.0f
+        //position              //color rgb
+        -0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
+         0.5f, 0.5f, 0.0f,      0.0f, 0.0f, 1.0f,
+        -0.5f, 0.5f, 0.0f,      0.0f, 1.0f, 1.0f
+    };
+
+    unsigned int indices[] = {
+        0,1,2,
+        0,2,4
     };
     unsigned int buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3,0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)0);
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)(3 * sizeof(float)));
+
+    unsigned int vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 6, indices, GL_STATIC_DRAW);
     
     unsigned int pragram = createShader(shaderSource.vertexShader, shaderSource.fragmentShader);
     glUseProgram(pragram);
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
+
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        
+
+        float timeValue = glfwGetTime();
+        float value = (sin(timeValue) / 2.0f) + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(pragram, "ourColor");
+        glUniform4f(vertexColorLocation,value, value*value, -value*value, 1.0f);
+
+        glBindVertexArray(vbo);
         /* Render here */
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
